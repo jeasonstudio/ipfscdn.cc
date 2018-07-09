@@ -28,6 +28,8 @@ const sleep = function (delay) {
 const getFilesByPackageName = async (name) => {
   const { assets = [] } = await fetch(`${apiHost}/libraries/${name}.min.json`).then(r => r.json());
   const pathss = assets
+    // 暂时只取前十个版本, 作为 demo 展示
+    .filter((_, ind) => (ind <= 5))
     .map(({ version, files = [] }) => files.map(fileName => ({
       name: `${name}_${version}_${fileName}`,
       filePath: path.resolve(__dirname, '../packages', name, version, fileName),
