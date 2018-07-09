@@ -13,11 +13,13 @@ const apiHost = 'https://api.bootcdn.cn';
 const cdnHost = 'https://cdn.bootcss.com';
 
 // JavaScript heap out of memory
-let filePath;
-let url;
-let dirName;
-const downloadOption = {};
+// let filePath;
+// let url;
+// let dirName;
+// const downloadOption = {};
 let progressBar;
+
+const POOL_LEN = 20;
 
 const sleep = function (delay) {
   return new Promise((resolve) => {
@@ -36,23 +38,48 @@ const getFilesByPackageName = async (name) => {
   return flatten(pathss);
 };
 
-const getFilesByUrl = async (thisLibList) => {
-  for (let index = 0; index < thisLibList.length; index += 1) {
-    filePath = thisLibList[index].filePath;
-    url = thisLibList[index].url;
-    dirName = path.dirname(filePath);
-    downloadOption.filename = path.basename(filePath);
-    if (!fs.existsSync(filePath)) {
-      try {
-        await makeDir(dirName);
-        await sleep(10);
-        await download(url, dirName, downloadOption);
-      } catch (error) {
-        console.log('Something error:', url);
-        console.log(error);
-      }
-    }
-    progressBar.tick();
+// const getFilesByUrl = async (thisLibList) => {
+//   for (let index = 0; index < thisLibList.length; index += 1) {
+//     filePath = thisLibList[index].filePath;
+//     url = thisLibList[index].url;
+//     dirName = path.dirname(filePath);
+//     downloadOption.filename = path.basename(filePath);
+//     if (!fs.existsSync(filePath)) {
+//       try {
+//         await makeDir(dirName);
+//         // await sleep(10);
+//         await download(url, dirName, downloadOption);
+//       } catch (error) {
+//         console.log('Something error:', url);
+//         console.log(error);
+//       }
+//     }
+//     progressBar.tick();
+//   }
+// };
+
+const fetchAndDownload = async (filePath, url, dirName, downloadOption) => {
+  if (fs.existsSync(filePath)) return 0;
+  try {
+    await makeDir(dirName);
+    await download(url, dirName, downloadOption);
+  } catch (error) {
+    console.log('Something error:', url);
+    console.log(error);
+    // throw error;
+  }
+  return 1;
+};
+
+const getFilesByUrlPool = async (thisLibList) => {
+  while (thisLibList.length >= 0) {
+    const getList = thisLibList.splice(0, POOL_LEN);
+    const res = await Promise.all(
+      getList.map(v => fetchAndDownload(
+        v.filePath, v.url, path.dirname(v.filePath), { filename: path.basename(v.filePath) },
+      )),
+    );
+    progressBar.tick(res.length);
   }
 };
 
@@ -83,7 +110,8 @@ const getFilesByUrl = async (thisLibList) => {
       width: 30,
       total: thisLibList.length,
     });
-    await getFilesByUrl(thisLibList);
+    // await getFilesByUrl(thisLibList);
+    await getFilesByUrlPool(thisLibList);
     await sleep(20);
   }
   console.log('Finished!!');
