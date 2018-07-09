@@ -3,7 +3,7 @@
 const fetch = require('node-fetch');
 const path = require('path');
 const flatten = require('lodash.flatten');
-const del = require('del');
+// const del = require('del');
 const makeDir = require('make-dir');
 const download = require('download');
 const ProgressBar = require('progress');
@@ -77,7 +77,7 @@ const getFilesByUrl = async (thisLibList) => {
   for (let i = 0; i < libList.length; i += 1) {
     thisLibList = await getFilesByPackageName(libList[i]);
     await sleep(20);
-    progressBar = new ProgressBar(`${libList[i]} [:bar] :percent :elapsed`, {
+    progressBar = new ProgressBar(`${libList[i]} [:bar] :percent :elapsed s`, {
       complete: '=',
       incomplete: '-',
       width: 30,
